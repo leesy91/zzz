@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>초등학생 영어문법</title>
+  <style>
+    /* 전체 화면 스타일 */
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(to bottom right, #A1C4FD, #C2E9FB);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    /* 상단 헤더 */
+    header {
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 2em;
+      font-weight: 600;
+    }
+    /* 퀴즈 영역을 가운데 정렬하기 위한 컨테이너 */
+    .main-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    /* 퀴즈 박스 */
+    #quizContainer {
+      display: none;
+      max-width: 720px;
+      width: 100%;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+    /* 시작 화면 */
+    #startScreen {
+      text-align: center;
+      background: rgba(255,255,255,0.8);
+      border-radius: 12px;
+      padding: 40px;
+      max-width: 600px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+    #startScreen h2 {
+      margin-bottom: 20px;
+      font-size: 1.5em;
+    }
+    /* 공통 버튼 스타일 */
+    button {
+      cursor: pointer;
+      padding: 12px 20px;
+      margin: 15px 5px 0 0;
+      border: none;
+      border-radius: 4px;
+      background-color: #007BFF;
+      color: #fff;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    /* 질문 & 보기 */
+    #questionNumberTitle {
+      text-align: center;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    .question-box {
+      margin-bottom: 20px;
+    }
+    .choices {
+      list-style: none;
+      padding: 0;
+    }
+    .choices li {
+      margin: 8px 0;
+    }
+    /* 정답/오답 및 해설 */
+    #feedback {
+      margin-top: 20px;
+      font-size: 1rem;
+    }
+    .explanation {
+      margin-top: 10px;
+      padding: 10px;
+      background-color: #f3f3f3;
+      border-radius: 6px;
+    }
+    .correct {
+      color: green;
+      font-weight: bold;
+    }
+    .incorrect {
+      color: red;
+      font-weight: bold;
+    }
+    /* 결과 화면 */
+    #resultContainer {
+      display: none;
+      text-align: center;
+      background: rgba(255,255,255,0.9);
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>초등학생 영어문법</h1>
+</header>
+
+<div class="main-container">
+
+  <!-- 시작 화면 -->
+  <div id="startScreen">
+    <h2>퀴즈에 도전해 보세요!</h2>
+    <p style="line-height:1.6;">
+      문제들은 무작위 순서로 출제되며,<br>
+      틀린 문제는 맞출 때까지 계속 랜덤으로 다시 나옵니다.<br>
+      총 100문항을 모두 정답 처리해야 퀴즈가 종료됩니다.
+    </p>
+    <button onclick="startQuiz()">퀴즈 시작하기</button>
+  </div>
+
+  <!-- 퀴즈 컨테이너 -->
+  <div id="quizContainer">
+    <h2 id="questionNumberTitle"></h2>
+    <div class="question-box">
+      <p id="questionText"></p>
+      <ul id="choiceList" class="choices"></ul>
+    </div>
+    <div id="feedback"></div>
+
+    <button id="submitBtn" onclick="submitAnswer()">제출</button>
+    <button id="nextBtn" onclick="nextQuestion()" style="display:none;">다음 문제</button>
+  </div>
+
+  <!-- 퀴즈 완료 후 결과 화면 -->
+  <div id="resultContainer">
+    <h2>축하합니다!</h2>
+    <p>100문제를 모두 정답 처리하셨습니다.</p>
+    <p>수고 많으셨습니다!</p>
+  </div>
+
+</div>
+
+<script>
+// ===================== 문제 데이터 (총 100문항) =====================
+// 관사/주격대명사/복수형 문제는 제외하고, 기존에 예시로 만든
+// 조금 더 어려운 문법(현재진행, 과거시제, 비교급/최상급 등)을 사용한 버전.
+// 각 question에서 번호를 제거했습니다.
+
+const questionsData = [
+  {
+    question: "'그는 어제 집에 있었다.' -> He ___ at home yesterday.",
+    choices: ["was", "were", "is", "are"],
+    correct: 0,
+    explanation: "과거형(단수) → was."
+  },
+  {
+    question: "'너는 지난주에 아팠니?' -> ___ you sick last week?",
+    choices: ["Are", "Were", "Do", "Did"],
+    correct: 1,
+    explanation: "과거형(you) → Were you ~?"
+  },
+  {
+    question: "'우리는 그때 학생이 아니었다.' -> We ___ students then.",
+    choices: ["aren't", "wasn't", "weren't", "didn't"],
+    correct: 2,
+    explanation: "We + 과거부정 → weren't."
+  },
+  {
+    question: "'그것은 더 이상 작동하지 않았다.' -> It ___ not working anymore.",
+    choices: ["was", "were", "did", "is"],
+    correct: 0,
+    explanation: "과거진행 부정 → was not working."
+  },
+  {
+    question: "'나는 어젯밤 피곤했어.' -> I ___ tired last night.",
+    choices: ["were", "was", "am", "be"],
+    correct: 1,
+    explanation: "I + was."
+  },
+  {
+    question: "'그들은 오늘 여기 있니?' -> ___ they here today?",
+    choices: ["Are", "Is", "Were", "Was"],
+    correct: 0,
+    explanation: "현재형(They) → Are they ~?"
+  },
+  {
+    question: "'이것은 전혀 쉬운 일이 아니었다.' -> This ___ not easy at all.",
+    choices: ["did", "was", "were", "am"],
+    correct: 1,
+    explanation: "This + was not."
+  },
+  {
+    question: "'너는 어제 집에 없었니?' -> ___ you at home yesterday?",
+    choices: ["Weren't", "Didn't", "Aren't", "Wasn't"],
+    correct: 0,
+    explanation: "Were you not → Weren't you ~?"
+  },
+  {
+    question: "'그녀는 항상 친절했다.' -> She always ___ kind.",
+    choices: ["is", "was", "were", "be"],
+    correct: 1,
+    explanation: "과거(3인칭 단수) → was."
+  },
+  {
+    question: "'저 아이들은 그때 너무 어렸다.' -> Those children ___ too young then.",
+    choices: ["were", "was", "are", "do"],
+    correct: 0,
+    explanation: "children(복수) + 과거 → were."
+  },
+
+  {
+    question: "'나는 지금 숙제를 하고 있다.' -> I ___ my homework now.",
+    choices: ["do", "did", "am doing", "doing"],
+    correct: 2,
+    explanation: "지금(now) → am doing."
+  },
+  {
+    question: "'그들은 매일 축구를 한다.' -> They ___ soccer every day.",
+    choices: ["play", "are playing", "played", "plays"],
+    correct: 0,
+    explanation: "every day → 단순현재(복수) → play."
+  },
+  {
+    question: "'그는 지금 전화로 얘기 중이다.' -> He ___ on the phone now.",
+    choices: ["talk", "talks", "is talking", "talking"],
+    correct: 2,
+    explanation: "now → 현재진행 → is talking."
+  },
+  {
+    question: "'우리는 보통 아침 7시에 일어난다.' -> We usually ___ up at 7 a.m.",
+    choices: ["are getting", "get", "gets", "getting"],
+    correct: 1,
+    explanation: "usually → 단순현재(복수) → get."
+  },
+  {
+    question: "'너는 지금 뭐 하는 중이니?' -> What ___ you ___ now?",
+    choices: ["are / doing", "do / do", "did / do", "will / do"],
+    correct: 0,
+    explanation: "현재진행 → What are you doing now?"
+  },
+  {
+    question: "'나는 매주 토요일에 수영하러 간다.' -> I ___ swimming every Saturday.",
+    choices: ["am going", "go", "goes", "going"],
+    correct: 1,
+    explanation: "습관(매주) → 단순현재 → go."
+  },
+  {
+    question: "'그녀는 지금 TV를 보지 않고 있다.' -> She ___ watching TV now.",
+    choices: ["doesn't", "don't", "isn't", "aren't"],
+    correct: 2,
+    explanation: "현재진행 부정 → isn't watching."
+  },
+  {
+    question: "'나는 보통 초콜릿을 좋아하지 않는다.' -> I usually ___ chocolate.",
+    choices: ["am not liking", "don't like", "doesn't like", "am not like"],
+    correct: 1,
+    explanation: "단순현재 부정(주어 I) → don't like."
+  },
+  {
+    question: "'그들은 지금 뭘 먹고 있니?' -> What ___ they ___ now?",
+    choices: ["do / eat", "are / eating", "did / eat", "did / ate"],
+    correct: 1,
+    explanation: "now → 현재진행 → are eating."
+  },
+  {
+    question: "'Tom은 보통 9시에 자지만, 오늘은 늦게 자고 있다.' -> Tom usually ___ at 9, but today he ___ late.",
+    choices: [
+      "sleeps / is sleeping",
+      "is sleeping / sleeps",
+      "sleep / are sleeping",
+      "sleeps / sleeps"
+    ],
+    correct: 0,
+    explanation: "평소 → sleeps, 지금 → is sleeping."
+  },
+
+  {
+    question: "'너는 어제 숙제를 했니?' -> ___ you do your homework yesterday?",
+    choices: ["Do", "Does", "Did", "Are"],
+    correct: 2,
+    explanation: "과거 의문 → Did you do ~?"
+  },
+  {
+    question: "'그는 피아노를 치지 않는다.' -> He ___ play the piano.",
+    choices: ["don't", "doesn't", "didn't", "isn't"],
+    correct: 1,
+    explanation: "단순현재 부정(3인칭) → doesn't play."
+  },
+  {
+    question: "'너는 매일 뭘 먹니?' -> What ___ you eat every day?",
+    choices: ["do", "does", "did", "are"],
+    correct: 0,
+    explanation: "주어 you + 매일 → do you eat?"
+  },
+  {
+    question: "'그녀는 어제 책을 읽지 않았다.' -> She ___ read a book yesterday.",
+    choices: ["don't", "doesn't", "didn't", "isn't"],
+    correct: 2,
+    explanation: "과거 부정 → didn't read."
+  },
+  {
+    question: "'그들은 보통 어디서 공부하니?' -> Where ___ they usually study?",
+    choices: ["do", "does", "did", "are"],
+    correct: 0,
+    explanation: "They(복수) → do they usually study?"
+  },
+  {
+    question: "'그는 왜 그렇게 말했니?(과거)' -> Why ___ he say that?",
+    choices: ["do", "does", "did", "is"],
+    correct: 2,
+    explanation: "과거 의문 → Why did he say that?"
+  },
+  {
+    question: "'우리는 그 문제를 해결하지 못했다.(과거)' -> We ___ solve the problem.",
+    choices: ["don't", "doesn't", "didn't", "aren't"],
+    correct: 2,
+    explanation: "과거 부정 → didn't solve."
+  },
+  {
+    question: "'너는 왜 영어를 공부하지 않니?(현재)' -> Why ___ you study English?",
+    choices: ["don't", "doesn't", "didn't", "aren't"],
+    correct: 0,
+    explanation: "현재 부정(주어 you) → don't study."
+  },
+  {
+    question: "'나는 지난밤 TV를 보지 않았다.' -> I ___ watch TV last night.",
+    choices: ["don't", "doesn't", "didn't", "wasn't"],
+    correct: 2,
+    explanation: "과거 부정 → didn't watch."
+  },
+  {
+    question: "'Jenny는 아침을 안 먹니?(현재)' -> ___ Jenny skip breakfast?",
+    choices: ["Do", "Does", "Did", "Is"],
+    correct: 1,
+    explanation: "Jenny(3인칭 단수) → Does Jenny skip ~?"
+  },
+
+  {
+    question: "'나는 어제 학교에 갔다.' -> I ___ to school yesterday.",
+    choices: ["go", "goed", "went", "going"],
+    correct: 2,
+    explanation: "go → went."
+  },
+  {
+    question: "'그들은 작년에 서울로 이사했다.(규칙동사)' -> They ___ to Seoul last year.",
+    choices: ["move", "moved", "moving", "moves"],
+    correct: 1,
+    explanation: "move → moved."
+  },
+  {
+    question: "'그녀는 지난주에 편지를 썼다.' -> She ___ a letter last week.",
+    choices: ["writes", "wrote", "written", "write"],
+    correct: 1,
+    explanation: "write → wrote."
+  },
+  {
+    question: "'나는 아침을 먹지 않았다.(과거)' -> I ___ breakfast.",
+    choices: ["don't eat", "didn't ate", "didn't eat", "wasn't eat"],
+    correct: 2,
+    explanation: "과거 부정 → didn't eat."
+  },
+  {
+    question: "'Tom은 어제 나를 도왔다.(규칙동사)' -> Tom ___ me yesterday.",
+    choices: ["helped", "did help", "helps", "help"],
+    correct: 0,
+    explanation: "help → helped."
+  },
+  {
+    question: "'나는 지난주에 새로운 책을 샀다.(불규칙)' -> I ___ a new book last week.",
+    choices: ["buyed", "bought", "buying", "did buy"],
+    correct: 1,
+    explanation: "buy → bought."
+  },
+  {
+    question: "'우리 부모님은 작년에 차를 팔았다.(불규칙)' -> My parents ___ their car last year.",
+    choices: ["sell", "selled", "sold", "sells"],
+    correct: 2,
+    explanation: "sell → sold."
+  },
+  {
+    question: "'그는 어젯밤 늦게 잤다.(불규칙)' -> He ___ late last night.",
+    choices: ["sleeped", "slept", "sleep", "was sleep"],
+    correct: 1,
+    explanation: "sleep → slept."
+  },
+  {
+    question: "'우리는 일요일에 공원에서 뛰었다.(불규칙)' -> We ___ in the park on Sunday.",
+    choices: ["runed", "ran", "runned", "raned"],
+    correct: 1,
+    explanation: "run → ran."
+  },
+  {
+    question: "'그들은 어제 공부를 열심히 했다.(규칙동사)' -> They ___ hard yesterday.",
+    choices: ["study", "studied", "studing", "studys"],
+    correct: 1,
+    explanation: "study → studied."
+  },
+
+  {
+    question: "'너는 왜 그렇게 화가 났니?' -> ___ are you so angry?",
+    choices: ["What", "Why", "Which", "Who"],
+    correct: 1,
+    explanation: "왜 → Why."
+  },
+  {
+    question: "'네가 뭘 하고 있는지 말해 줄래?' -> Can you tell me ___ you are doing?",
+    choices: ["why", "what", "which", "where"],
+    correct: 1,
+    explanation: "무엇 → what."
+  },
+  {
+    question: "'누가 이 창문을 깼니?' -> ___ broke this window?",
+    choices: ["What", "Who", "Why", "Which"],
+    correct: 1,
+    explanation: "누가 → Who."
+  },
+  {
+    question: "'이 중에서 어느 색을 좋아하니?' -> ___ color do you like?",
+    choices: ["Why", "Who", "Which", "Where"],
+    correct: 2,
+    explanation: "어느 것 → Which."
+  },
+  {
+    question: "'이건 누구의 가방이니?' -> ___ bag is this?",
+    choices: ["What", "Why", "Which", "Whose"],
+    correct: 3,
+    explanation: "누구의 → Whose."
+  },
+  {
+    question: "'너는 어디에서 점심을 먹니?' -> ___ do you have lunch?",
+    choices: ["Who", "When", "Where", "Which"],
+    correct: 2,
+    explanation: "어디에서 → Where."
+  },
+  {
+    question: "'언제 숙제를 끝냈니?' -> ___ did you finish your homework?",
+    choices: ["Who", "When", "Where", "Which"],
+    correct: 1,
+    explanation: "언제 → When."
+  },
+  {
+    question: "'누구와 함께 영화를 보러 갔니?' -> ___ did you go to the movie with?",
+    choices: ["What", "Who", "Which", "Whom"],
+    correct: 1,
+    explanation: "회화에선 Who ~ with?가 일반적."
+  },
+  {
+    question: "'무엇이 그를 그렇게 기쁘게 만들었니?' -> ___ made him so happy?",
+    choices: ["Who", "What", "Which", "Why"],
+    correct: 1,
+    explanation: "무엇이 → What."
+  },
+  {
+    question: "'이 문제를 어떻게 푸니?' -> ___ do you solve this problem?",
+    choices: ["Why", "When", "How", "Which"],
+    correct: 2,
+    explanation: "어떻게 → How."
+  },
+
+  {
+    question: "'나는 피아노를 칠 수 있다.' -> I ___ play the piano.",
+    choices: ["can", "must", "have to", "am"],
+    correct: 0,
+    explanation: "can = ~할 수 있다."
+  },
+  {
+    question: "'너는 여기에 머물러야 한다.(의무)' -> You ___ stay here.",
+    choices: ["can", "must", "are", "may"],
+    correct: 1,
+    explanation: "must = ~해야 한다."
+  },
+  {
+    question: "'우리는 숙제를 해야 한다(의무).' -> We ___ do our homework.",
+    choices: ["can", "must", "have to", "shouldn't"],
+    correct: 2,
+    explanation: "have to = ~해야 한다."
+  },
+  {
+    question: "'그는 영어를 말할 수 없다.' -> He ___ speak English.",
+    choices: ["can", "must", "cannot", "mustn't"],
+    correct: 2,
+    explanation: "cannot = ~할 수 없다."
+  },
+  {
+    question: "'너는 이 약을 꼭 먹어야 한다.' -> You ___ take this medicine.",
+    choices: ["can", "may", "have to", "cannot"],
+    correct: 2,
+    explanation: "have to = 꼭 ~해야 한다."
+  },
+  {
+    question: "'그들은 조용히 해야 한다.' -> They ___ be quiet.",
+    choices: ["cannot", "must", "can", "will"],
+    correct: 1,
+    explanation: "must = ~해야 한다."
+  },
+  {
+    question: "'난 지금 나갈 수 없어.' -> I ___ go out now.",
+    choices: ["must not", "cannot", "am not", "have to not"],
+    correct: 1,
+    explanation: "cannot = ~할 수 없다."
+  },
+  {
+    question: "'너는 여기서 사진을 찍으면 안 된다.(금지)' -> You ___ take photos here.",
+    choices: ["must not", "cannot", "don't", "aren't"],
+    correct: 0,
+    explanation: "must not = ~하면 안 된다."
+  },
+  {
+    question: "'우리는 내일까지 이 일을 끝내야 한다.' -> We ___ finish this by tomorrow.",
+    choices: ["can", "are", "have to", "cannot"],
+    correct: 2,
+    explanation: "have to = ~해야 한다."
+  },
+  {
+    question: "'너는 집에 일찍 올 수 있니?' -> ___ you come home early?",
+    choices: ["Must", "Can", "Have to", "Do"],
+    correct: 1,
+    explanation: "Can you ~? = ~할 수 있니?"
+  },
+
+  {
+    question: "'나는 7시에 일어난다.' -> I get up ___ 7 o'clock.",
+    choices: ["in", "on", "at", "for"],
+    correct: 2,
+    explanation: "정각 시각 앞에는 at."
+  },
+  {
+    question: "'우리는 월요일에 시험이 있다.' -> We have a test ___ Monday.",
+    choices: ["in", "on", "at", "for"],
+    correct: 1,
+    explanation: "요일 앞에는 on."
+  },
+  {
+    question: "'그들은 2019년에 이사를 했다.' -> They moved ___ 2019.",
+    choices: ["in", "on", "at", "to"],
+    correct: 0,
+    explanation: "연도 앞에는 in."
+  },
+  {
+    question: "'나는 밤에 공부한다.' -> I study ___ night.",
+    choices: ["in", "on", "at", "for"],
+    correct: 2,
+    explanation: "관용적으로 at night."
+  },
+  {
+    question: "'그녀는 파티에 갈 것이다 ___ 버스.' -> She will go to the party ___ bus.",
+    choices: ["at / to", "by / by", "by / on", "by / by"],
+    correct: 1,
+    explanation: "파티로 갈 때 will go to the party, 교통수단 by bus."
+  },
+  {
+    question: "'나는 노래 부르는 것을 즐긴다 ___ 친구들과 함께.' -> I enjoy singing ___ my friends.",
+    choices: ["with / with", "to / to", "for / to", "with / for"],
+    correct: 0,
+    explanation: "함께 → with my friends."
+  },
+  {
+    question: "'나는 영어책을 찾고 있다 ___ 도서관에서.' -> I'm looking for an English book ___ the library.",
+    choices: ["in / in", "at / in", "in / at", "on / at"],
+    correct: 2,
+    explanation: "장소 library 앞에는 at 또는 in 가능. 예: at the library."
+  },
+  {
+    question: "'그들은 박물관으로 갔다 ___ 전철을 타고.' -> They went to the museum ___ subway.",
+    choices: ["by / by", "on / by", "to / in", "× / ×"],
+    correct: 1,
+    explanation: "went to the museum, 교통수단 by subway."
+  },
+  {
+    question: "'나는 이 선물을 너에게 주고 싶다.' -> I want to give this present ___ you.",
+    choices: ["to", "for", "at", "with"],
+    correct: 0,
+    explanation: "give ~ to you."
+  },
+  {
+    question: "'그녀는 나를 위해 노래를 불렀다.' -> She sang a song ___ me.",
+    choices: ["to", "for", "with", "about"],
+    correct: 1,
+    explanation: "~을 위해 → for me."
+  },
+
+  {
+    question: "'이 방은 저 방보다 더 크다.' -> This room is ___ than that one.",
+    choices: ["big", "bigger", "biggest", "more big"],
+    correct: 1,
+    explanation: "비교급 → bigger."
+  },
+  {
+    question: "'어느 과일이 가장 달콤하니?' -> Which fruit is the ___?",
+    choices: ["sweeter", "sweetest", "most sweet", "sweet"],
+    correct: 1,
+    explanation: "최상급 → sweetest."
+  },
+  {
+    question: "'Tom은 나보다 키가 더 크다.' -> Tom is ___ than me.",
+    choices: ["tall", "the tallest", "taller", "most tall"],
+    correct: 2,
+    explanation: "비교급 → taller."
+  },
+  {
+    question: "'이 영화가 세 영화 중에서 가장 무섭다.' -> This movie is the ___ among the three.",
+    choices: ["scariest", "scarier", "most scary", "scarier than"],
+    correct: 0,
+    explanation: "최상급 → scariest."
+  },
+  {
+    question: "'누가 가장 빨리 달리니?' -> Who runs the ___?",
+    choices: ["fast", "faster", "fastest", "more fast"],
+    correct: 2,
+    explanation: "가장 빠르게 → fastest."
+  },
+  {
+    question: "'봄이 겨울보다 더 따뜻하다.' -> Spring is ___ than winter.",
+    choices: ["warm", "warmer", "the warmest", "most warm"],
+    correct: 1,
+    explanation: "비교급 → warmer."
+  },
+  {
+    question: "'나는 너보다 더 일찍 일어난다.' -> I get up ___ than you.",
+    choices: ["early", "earlier", "earliest", "more early"],
+    correct: 1,
+    explanation: "비교급 → earlier."
+  },
+  {
+    question: "'이것이 내가 가진 펜 중에서 가장 비싼 것이다.' -> This is the ___ pen I have.",
+    choices: ["expensive", "more expensive", "most expensive", "expensivest"],
+    correct: 2,
+    explanation: "최상급 → the most expensive."
+  },
+  {
+    question: "'그는 우리 반에서 가장 똑똑한 학생이다.' -> He is the ___ student in our class.",
+    choices: ["smart", "smarter", "most smart", "smartest"],
+    correct: 3,
+    explanation: "최상급 → smartest."
+  },
+  {
+    question: "'바다가 강보다 더 깊다.' -> The sea is ___ than the river.",
+    choices: ["deep", "deeper", "deepest", "the deeper"],
+    correct: 1,
+    explanation: "비교급 → deeper."
+  },
+
+  {
+    question: "'나는 내일 영화를 볼 것이다.' -> I ___ watch a movie tomorrow.",
+    choices: ["will", "am going to", "do", "can"],
+    correct: 0,
+    explanation: "will watch."
+  },
+  {
+    question: "'그들은 곧 이사를 갈 예정이다.' -> They ___ move soon.",
+    choices: ["will", "are going to", "did", "must"],
+    correct: 1,
+    explanation: "be going to move."
+  },
+  {
+    question: "'너는 주말에 뭘 할 거니?' -> What ___ you do on the weekend?",
+    choices: ["will", "are going to", "do", "did"],
+    correct: 0,
+    explanation: "What will you do ~?"
+  },
+  {
+    question: "'나는 새 가방을 살 거야.' -> I ___ buy a new bag.",
+    choices: ["am going to", "did", "have to", "am doing to"],
+    correct: 0,
+    explanation: "am going to buy ~."
+  },
+  {
+    question: "'그는 내년에 중학교에 갈 것이다.' -> He ___ go to middle school next year.",
+    choices: ["will", "did", "was", "can"],
+    correct: 0,
+    explanation: "will go ~."
+  },
+  {
+    question: "'우리는 비가 오면 집에 있을 예정이다.' -> We ___ stay home if it rains.",
+    choices: ["was", "are going to", "did", "must"],
+    correct: 1,
+    explanation: "are going to stay."
+  },
+  {
+    question: "'너는 내일 날씨가 어떨 거라고 생각하니?' -> What do you think the weather ___ be like tomorrow?",
+    choices: ["will", "did", "is", "was"],
+    correct: 0,
+    explanation: "the weather will be like?"
+  },
+  {
+    question: "'그들은 곧 이 문제를 해결할 것이다.' -> They ___ fix this problem soon.",
+    choices: ["are going to", "didn't", "can", "are fixing"],
+    correct: 0,
+    explanation: "are going to fix."
+  },
+  {
+    question: "'나는 곧 숙제를 끝낼 거야.' -> I ___ finish my homework soon.",
+    choices: ["will", "am", "did", "have to"],
+    correct: 0,
+    explanation: "will finish ~."
+  },
+  {
+    question: "'네가 전화하면, 그가 도와줄 거야.' -> If you call, he ___ help you.",
+    choices: ["is", "was", "will", "are going to"],
+    correct: 2,
+    explanation: "조건절(If) → he will help you."
+  },
+
+  {
+    question: "'이것은 내 책이다.' -> This is ___ book.",
+    choices: ["my", "mine", "your", "ours"],
+    correct: 0,
+    explanation: "'내 책' → my book."
+  },
+  {
+    question: "'이 가방은 나의 것이다.' -> This bag is ___.",
+    choices: ["my", "mine", "me", "I"],
+    correct: 1,
+    explanation: "소유대명사 mine."
+  },
+  {
+    question: "'저 공은 너의 것이니?' -> Is that ball ___?",
+    choices: ["yours", "your", "you're", "you"],
+    correct: 0,
+    explanation: "소유대명사 yours."
+  },
+  {
+    question: "'그들의 차는 파란색이고, 우리의 차는 빨간색이다.' -> ___ car is blue, and ___ is red.",
+    choices: [
+      "Their / our",
+      "They / ours",
+      "Theirs / ours",
+      "They / we"
+    ],
+    correct: 0,
+    explanation: "소유형용사: Their car / our car."
+  },
+  {
+    question: "'이 책은 누구의 것이니?' -> ___ book is this?",
+    choices: ["Who", "Whose", "Which", "What"],
+    correct: 1,
+    explanation: "누구의 → Whose."
+  },
+  {
+    question: "'이 펜은 Tom의 것이다.' -> This pen is ___.",
+    choices: ["Tom", "Tom's", "Toms", "Toms'"],
+    correct: 1,
+    explanation: "Tom + 's."
+  },
+  {
+    question: "'그것은 그녀의 공이다.' -> It is ___ ball.",
+    choices: ["she", "her", "hers", "she's"],
+    correct: 1,
+    explanation: "소유형용사 → her ball."
+  },
+  {
+    question: "'이 개는 그의 것이 아니다.' -> This dog is not ___.",
+    choices: ["his", "him", "he's", "he"],
+    correct: 0,
+    explanation: "소유대명사 his."
+  },
+  {
+    question: "'그녀의 자전거는 저기 있고, 내 것은 여기에 있다.' -> ___ bike is there, and ___ is here.",
+    choices: [
+      "Her / mine",
+      "Hers / my",
+      "Her / my",
+      "She / me"
+    ],
+    correct: 0,
+    explanation: "소유형용사: Her bike / 소유대명사: mine."
+  },
+  {
+    question: "'이 지갑은 내 어머니의 것이다.' -> This wallet is my ___.",
+    choices: ["mother", "mothers", "mother's", "mother is"],
+    correct: 2,
+    explanation: "my mother + 's."
+  }
+];
+
+// 전역 상태
+let pool = [];            // 아직 정답 처리 안 된 문제들의 풀(랜덤)
+let questionNumber = 1;   // "문제 n번" 표시를 위한 번호
+let currentQuestion = null; // 현재 문제 객체
+
+// 퀴즈 시작
+function startQuiz() {
+  document.getElementById('startScreen').style.display = 'none';
+  document.getElementById('quizContainer').style.display = 'block';
+
+  // 문제들을 셔플하여 pool에 저장
+  pool = shuffleArray([...questionsData]);
+  questionNumber = 1;
+
+  // 첫 문제 표시
+  showQuestion();
+}
+
+// 문제 표시
+function showQuestion() {
+  if(pool.length === 0) {
+    // 모든 문제 정답 처리됨
+    endQuiz();
+    return;
+  }
+  currentQuestion = pool[0]; // 맨 앞 문제
+
+  document.getElementById('questionNumberTitle').textContent = `문제 ${questionNumber}번`;
+  document.getElementById('questionText').textContent = currentQuestion.question;
+  document.getElementById('feedback').innerHTML = '';
+  document.getElementById('nextBtn').style.display = 'none';
+  document.getElementById('submitBtn').style.display = 'inline-block';
+
+  // 보기 렌더링
+  const choiceList = document.getElementById('choiceList');
+  choiceList.innerHTML = '';
+  currentQuestion.choices.forEach((choice, index) => {
+    const li = document.createElement('li');
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = 'quizChoice';
+    radio.value = index;
+    radio.id = 'choice' + index;
+
+    const label = document.createElement('label');
+    label.htmlFor = 'choice' + index;
+    label.textContent = choice;
+    label.style.marginLeft = '5px';
+
+    li.appendChild(radio);
+    li.appendChild(label);
+    choiceList.appendChild(li);
+  });
+}
+
+// 제출 버튼 (정답 판별)
+function submitAnswer() {
+  const selected = document.querySelector('input[name="quizChoice"]:checked');
+  if(!selected) {
+    alert("답안을 선택하세요!");
+    return;
+  }
+
+  const userAnswer = parseInt(selected.value, 10);
+  const feedback = document.getElementById('feedback');
+  feedback.innerHTML = '';
+
+  if(userAnswer === currentQuestion.correct) {
+    // 정답
+    feedback.innerHTML = `<p class="correct">정답입니다! 😊</p>
+                          <div class="explanation">${currentQuestion.explanation}</div>`;
+    // 문제 풀에서 제거
+    pool.shift();
+    document.getElementById('submitBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'inline-block';
+  } else {
+    // 오답
+    const correctText = currentQuestion.choices[currentQuestion.correct];
+    feedback.innerHTML = `<p class="incorrect">오답입니다!</p>
+      <div class="explanation">정답은 <strong>"${correctText}"</strong> 입니다.<br>
+      ${currentQuestion.explanation}</div>`;
+
+    // 현재 문제를 pool에서 제거 후, 맨 뒤로 삽입 + 다시 셔플
+    pool.shift();
+    pool.push(currentQuestion);
+    pool = shuffleArray(pool);
+
+    document.getElementById('submitBtn').style.display = 'none';
+    document.getElementById('nextBtn').style.display = 'inline-block';
+  }
+}
+
+// 다음 문제
+function nextQuestion() {
+  questionNumber++;
+  if(pool.length === 0) {
+    endQuiz();
+  } else {
+    showQuestion();
+  }
+}
+
+// 퀴즈 종료
+function endQuiz() {
+  document.getElementById('quizContainer').style.display = 'none';
+  document.getElementById('resultContainer').style.display = 'block';
+}
+
+// 배열 셔플 함수 (피셔-예이츠)
+function shuffleArray(array) {
+  for(let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+</script>
+
+</body>
+</html>
